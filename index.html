@@ -8,6 +8,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Thư viện Icon Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- THÊM THƯ VIỆN FIREBASE (PHIÊN BẢN 8 ĐỂ DỄ DÙNG TRỰC TIẾP TRONG HTML) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <style>
         .lined-paper {
             background-image: linear-gradient(transparent, transparent 27px, #e5e5e5 28px);
@@ -26,7 +31,7 @@
         <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
             <div class="flex items-center gap-2 text-rose-600">
                 <i data-lucide="heart" class="fill-current"></i>
-                <h1 class="text-xl font-bold tracking-tight">Lưu Bút          hoanglinh</h1>
+                <h1 class="text-xl font-bold tracking-tight">Lưu Bút Kỷ Niệm</h1>
             </div>
             <button id="toggleViewBtn" class="p-2 rounded-full hover:bg-stone-100 transition flex items-center gap-2 text-stone-500" title="Khu vực của chủ nhân">
                 <i id="headerIcon" data-lucide="lock" class="w-5 h-5"></i>
@@ -40,6 +45,14 @@
         <span id="notifMsg"></span>
     </div>
 
+    <!-- MÀN HÌNH LOADING DỮ LIỆU ĐÁM MÂY -->
+    <div id="loadingScreen" class="hidden fixed inset-0 bg-stone-100 z-40 flex items-center justify-center">
+        <div class="flex flex-col items-center gap-3 text-stone-500">
+            <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-rose-500"></i>
+            <p>Đang đồng bộ dữ liệu đám mây...</p>
+        </div>
+    </div>
+
     <main class="max-w-3xl mx-auto px-4 py-8">
         
         <!-- ================= VIEW: GHI LƯU BÚT ================= -->
@@ -47,7 +60,7 @@
             <div class="p-6 sm:p-8 space-y-6">
                 <div class="text-center space-y-2 mb-8">
                     <h2 class="text-2xl font-bold text-stone-800">Để lại lời chúc cho mình nhé!</h2>
-                    <p class="text-stone-500">Những dòng chữ này sẽ được lưu giữ cẩn thận và chỉ mình mới có thể đọc được.</p>
+                    <p class="text-stone-500">Những dòng chữ này sẽ được lưu giữ trên Đám Mây và chỉ mình mới có thể đọc được.</p>
                 </div>
 
                 <!-- Tên & Ẩn danh -->
@@ -97,7 +110,7 @@
                     </div>
                 </div>
 
-                <!-- Canvas: Ký tên / Vẽ tay (Có cục tẩy) -->
+                <!-- Canvas: Ký tên / Vẽ tay -->
                 <div class="space-y-3 pt-4 border-t border-stone-100">
                     <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                         <label class="block text-sm font-semibold text-stone-700 flex items-center gap-2">
@@ -114,24 +127,18 @@
                                     <i data-lucide="eraser" class="w-4 h-4"></i>
                                 </button>
                             </div>
-
                             <div class="w-px h-6 bg-stone-300 hidden sm:block"></div>
-
                             <!-- Color Picker -->
                             <div id="colorContainer" class="flex items-center gap-1 transition">
                                 <input type="color" id="brushColor" value="#000000" class="w-7 h-7 p-0 border-0 rounded cursor-pointer bg-transparent" title="Đổi màu bút">
                             </div>
-
                             <div class="w-px h-6 bg-stone-300 hidden sm:block"></div>
-
                             <!-- Size Slider -->
                             <div class="flex items-center gap-2 px-1 flex-1 sm:flex-none">
                                 <div id="sizeIndicator" class="w-2 h-2 rounded-full bg-stone-800"></div>
                                 <input type="range" id="brushSize" min="1" max="10" value="3" class="w-16 sm:w-20 accent-stone-600" title="Chỉnh cỡ ngòi/tẩy">
                             </div>
-
                             <div class="w-px h-6 bg-stone-300 hidden sm:block"></div>
-
                             <!-- Clear Canvas -->
                             <button id="clearCanvasBtn" class="text-stone-500 hover:text-red-500 p-1.5 rounded hover:bg-red-50 transition ml-auto sm:ml-0" title="Xóa toàn bộ">
                                 <i data-lucide="undo" class="w-4 h-4"></i>
@@ -147,7 +154,7 @@
 
                 <!-- Gửi -->
                 <button id="submitBtn" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-lg py-4 rounded-xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 mt-6">
-                    <i data-lucide="send" class="w-5 h-5"></i> Gửi Lưu Bút
+                    <i data-lucide="send" class="w-5 h-5"></i> Gửi Lên Đám Mây
                 </button>
             </div>
         </div>
@@ -156,7 +163,7 @@
         <div id="adminView" class="hidden space-y-6">
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-rose-100 flex justify-between items-center">
                 <div>
-                    <h2 class="text-2xl font-bold text-rose-700">Hòm Thư Của Bạn</h2>
+                    <h2 class="text-2xl font-bold text-rose-700">Hòm Thư Đám Mây Của Bạn</h2>
                     <p id="adminEntryCount" class="text-stone-500">Bạn đang có 0 lời chúc.</p>
                 </div>
             </div>
@@ -165,7 +172,6 @@
                 <!-- Danh sách lời chúc sẽ được render vào đây -->
             </div>
         </div>
-
     </main>
 
     <!-- ================= MODAL: NHẬP MÃ PIN ================= -->
@@ -181,37 +187,56 @@
                 <h3 class="text-xl font-bold text-stone-800">Khu vực riêng tư</h3>
                 <p class="text-sm text-stone-500 mt-1">Nhập mã PIN để xem lưu bút</p>
             </div>
-            <!-- Thay đổi type="password" thành type="text" nếu muốn nhìn thấy mật khẩu khi nhập, hiện tại đang ẩn -->
             <input type="password" id="pinInput" placeholder="Nhập mã PIN..." class="w-full text-center tracking-widest text-lg font-bold py-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-rose-400 outline-none mb-4">
             <button id="loginBtn" class="w-full bg-stone-800 hover:bg-stone-900 text-white font-semibold py-3 rounded-xl transition">Mở Khóa</button>
             <p class="text-xs text-center text-stone-400 mt-4">Khu vực chỉ dành cho quản trị viên</p>
         </div>
     </div>
 
-    <!-- ================= JAVASCRIPT ================= -->
+    <!-- ================= JAVASCRIPT & DATABASE ================= -->
     <script>
-        // Khởi tạo Icon Lucide
+        // Khởi tạo Icon
         lucide.createIcons();
+
+        // ------------------------------------------------------------------
+        // ĐÃ TÍCH HỢP CẤU HÌNH FIREBASE CỦA BẠN
+        // ------------------------------------------------------------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyAzjBUv-dU6xoRsRZmuqERM2bodVFzpdnY",
+            authDomain: "luubut-b6820.firebaseapp.com",
+            databaseURL: "https://luubut-b6820-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "luubut-b6820",
+            storageBucket: "luubut-b6820.firebasestorage.app",
+            messagingSenderId: "672838556514",
+            appId: "1:672838556514:web:4c8dc75b7ed4877367aa3b",
+            measurementId: "G-C9WRXQ452M"
+        };
+        
+        const isConfigured = true; // Đã cấu hình thành công
+
+        // Khởi tạo Firebase
+        let database;
+        if (isConfigured) {
+            firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+        }
 
         // 1. STATE VARIABLES
         let entries = [];
-        let viewMode = 'write'; // 'write' or 'admin'
+        let viewMode = 'write'; 
         let isAuthenticated = false;
         
         let currentPhotoData = null;
         let currentMood = '❤️';
         let isEraser = false;
         let hasSignature = false;
-        
         let isDrawing = false;
-        // ĐÃ ĐỔI MẬT KHẨU THEO YÊU CẦU
         const PIN_CODE = 'linh_2008';
 
         // 2. DOM ELEMENTS
         const toggleViewBtn = document.getElementById('toggleViewBtn');
         const headerIcon = document.getElementById('headerIcon');
         const headerText = document.getElementById('headerText');
-        
         const writeView = document.getElementById('writeView');
         const adminView = document.getElementById('adminView');
         const pinModal = document.getElementById('pinModal');
@@ -226,7 +251,9 @@
         const moodContainer = document.getElementById('moodContainer');
         const moodDisplay = document.getElementById('moodDisplay');
         const submitBtn = document.getElementById('submitBtn');
+        const loadingScreen = document.getElementById('loadingScreen');
 
+        // Canvas DOM
         const canvas = document.getElementById('signatureCanvas');
         const ctx = canvas.getContext('2d');
         const penToolBtn = document.getElementById('penToolBtn');
@@ -239,53 +266,61 @@
         const canvasContainer = document.getElementById('canvasContainer');
         const canvasHint = document.getElementById('canvasHint');
 
-        // 3. INITIALIZATION
+        // 3. INITIALIZATION & DATABASE SYNC
         function init() {
-            // Load từ Local Storage
-            const saved = localStorage.getItem('luubut_entries');
-            if (saved) entries = JSON.parse(saved);
-
-            // Khởi tạo Canvas size
             initCanvas();
-
-            // Khởi tạo Moods
             const moods = ['❤️', '😊', '😭', '✨', '🔥', '🍀'];
             moods.forEach(m => {
                 const btn = document.createElement('button');
                 btn.textContent = m;
                 btn.className = `w-8 h-8 rounded text-lg flex items-center justify-center transition ${m === currentMood ? 'bg-white shadow scale-110' : 'hover:bg-stone-200 grayscale opacity-60 hover:grayscale-0 hover:opacity-100'}`;
-                btn.title = "Chọn cảm xúc";
                 btn.onclick = () => selectMood(m, btn);
                 moodContainer.appendChild(btn);
             });
+
+            if (!isConfigured) {
+                showNotif('Vui lòng kết nối Firebase trong code để dùng chức năng gửi!', 'error');
+                return;
+            }
+
+            // Lắng nghe dữ liệu từ Firebase Realtime Database
+            const luubutRef = database.ref('luubut_entries');
+            luubutRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                entries = [];
+                if (data) {
+                    // Chuyển object thành mảng và sắp xếp (Mới nhất lên đầu)
+                    entries = Object.keys(data).map(key => ({
+                        firebaseKey: key, // Lưu lại key để xóa
+                        ...data[key]
+                    })).reverse();
+                }
+                
+                // Nếu đang ở màn hình admin thì render lại
+                if (viewMode === 'admin') {
+                    renderAdminList();
+                }
+            });
         }
 
-        // 4. NOTIFICATION FUNCTION
         function showNotif(msg, type = 'success') {
             const notif = document.getElementById('notification');
             const notifMsg = document.getElementById('notifMsg');
             notifMsg.textContent = msg;
-            
             notif.className = `fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full shadow-lg text-white font-medium transition-all duration-300 ${type === 'error' ? 'bg-red-500' : 'bg-green-500'}`;
-            
-            // Show
             requestAnimationFrame(() => {
                 notif.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-4');
                 notif.classList.add('opacity-100', 'translate-y-0');
             });
-
-            // Hide
             setTimeout(() => {
                 notif.classList.remove('opacity-100', 'translate-y-0');
                 notif.classList.add('opacity-0', 'pointer-events-none', '-translate-y-4');
             }, 3000);
         }
 
-        // 5. FORM EVENT LISTENERS
         isAnonymousCheck.addEventListener('change', (e) => {
-            const isChecked = e.target.checked;
-            senderNameInput.disabled = isChecked;
-            if (isChecked) {
+            senderNameInput.disabled = e.target.checked;
+            if (e.target.checked) {
                 senderNameInput.value = '';
                 senderNameInput.placeholder = "Sẽ hiển thị là 'Người bạn ẩn danh'";
             } else {
@@ -293,10 +328,8 @@
             }
         });
 
-        function selectMood(m, btnElement) {
-            currentMood = m;
-            moodDisplay.textContent = m;
-            // Update UI
+        function selectMood(m) {
+            currentMood = m; moodDisplay.textContent = m;
             Array.from(moodContainer.children).forEach(btn => {
                 btn.className = `w-8 h-8 rounded text-lg flex items-center justify-center transition ${btn.textContent === m ? 'bg-white shadow scale-110' : 'hover:bg-stone-200 grayscale opacity-60 hover:grayscale-0 hover:opacity-100'}`;
             });
@@ -305,112 +338,88 @@
         photoUpload.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                if (file.size > 5 * 1024 * 1024) {
-                    showNotif('Ảnh quá lớn. Vui lòng chọn ảnh dưới 5MB.', 'error');
-                    return;
-                }
+                // Resize ảnh qua Canvas để giảm dung lượng trước khi gửi lên Firebase
                 const reader = new FileReader();
-                reader.onloadend = () => {
-                    currentPhotoData = reader.result;
-                    photoPreview.src = currentPhotoData;
-                    photoPreviewContainer.classList.remove('hidden');
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const max_size = 800; // Giới hạn kích thước ảnh 800px để không nặng Firebase
+                        let width = img.width; let height = img.height;
+                        if (width > height) { if (width > max_size) { height *= max_size / width; width = max_size; } } 
+                        else { if (height > max_size) { width *= max_size / height; height = max_size; } }
+                        
+                        const tempCanvas = document.createElement('canvas');
+                        tempCanvas.width = width; tempCanvas.height = height;
+                        const tCtx = tempCanvas.getContext('2d');
+                        tCtx.drawImage(img, 0, 0, width, height);
+                        
+                        currentPhotoData = tempCanvas.toDataURL('image/jpeg', 0.6); // Chất lượng 60%
+                        photoPreview.src = currentPhotoData;
+                        photoPreviewContainer.classList.remove('hidden');
+                    };
+                    img.src = event.target.result;
                 };
                 reader.readAsDataURL(file);
             }
         });
 
-        removePhotoBtn.addEventListener('click', () => {
-            currentPhotoData = null;
-            photoUpload.value = '';
-            photoPreviewContainer.classList.add('hidden');
-        });
+        removePhotoBtn.addEventListener('click', () => { currentPhotoData = null; photoUpload.value = ''; photoPreviewContainer.classList.add('hidden'); });
 
-        // 6. CANVAS (DRAWING & ERASER) LOGIC
         function initCanvas() {
             canvas.width = canvas.parentElement.offsetWidth;
-            canvas.height = 200; // Fixed height
-            clearCanvas(); // Fill white
+            canvas.height = 200; clearCanvas();
         }
 
         function clearCanvas() {
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            hasSignature = false;
-            canvasHint.style.display = 'block';
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            hasSignature = false; canvasHint.style.display = 'block';
         }
 
         function getCanvasCoordinates(evt) {
             const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
+            const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
             let clientX, clientY;
-
-            if (evt.touches && evt.touches.length > 0) {
-                clientX = evt.touches[0].clientX;
-                clientY = evt.touches[0].clientY;
-            } else {
-                clientX = evt.clientX;
-                clientY = evt.clientY;
-            }
-
-            return {
-                x: (clientX - rect.left) * scaleX,
-                y: (clientY - rect.top) * scaleY
-            };
+            if (evt.touches && evt.touches.length > 0) { clientX = evt.touches[0].clientX; clientY = evt.touches[0].clientY; } 
+            else { clientX = evt.clientX; clientY = evt.clientY; }
+            return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
         }
 
         function startDraw(e) {
-            e.preventDefault();
-            isDrawing = true;
-            canvasHint.style.display = 'none';
+            e.preventDefault(); isDrawing = true; canvasHint.style.display = 'none';
             const { x, y } = getCanvasCoordinates(e);
-            ctx.beginPath();
-            ctx.moveTo(x, y);
+            ctx.beginPath(); ctx.moveTo(x, y);
         }
 
         function performDraw(e) {
-            e.preventDefault();
-            if (!isDrawing) return;
+            e.preventDefault(); if (!isDrawing) return;
             const { x, y } = getCanvasCoordinates(e);
             ctx.lineTo(x, y);
-            
             ctx.strokeStyle = isEraser ? '#ffffff' : brushColorInput.value;
             ctx.lineWidth = isEraser ? brushSizeInput.value * 2 : brushSizeInput.value;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-            ctx.stroke();
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.stroke();
             hasSignature = true;
         }
 
-        function stopDraw() {
-            isDrawing = false;
-        }
+        function stopDraw() { isDrawing = false; }
 
-        // Canvas Events
-        canvas.addEventListener('mousedown', startDraw);
-        canvas.addEventListener('mousemove', performDraw);
-        canvas.addEventListener('mouseup', stopDraw);
-        canvas.addEventListener('mouseleave', stopDraw);
-        
+        canvas.addEventListener('mousedown', startDraw); canvas.addEventListener('mousemove', performDraw);
+        canvas.addEventListener('mouseup', stopDraw); canvas.addEventListener('mouseleave', stopDraw);
         canvas.addEventListener('touchstart', startDraw, { passive: false });
         canvas.addEventListener('touchmove', performDraw, { passive: false });
         canvas.addEventListener('touchend', stopDraw);
 
-        // Tool Selection UI
         function updateToolUI() {
             if (isEraser) {
                 eraserToolBtn.className = "p-1.5 rounded-md transition flex items-center justify-center bg-rose-100 text-rose-600 shadow-sm";
                 penToolBtn.className = "p-1.5 rounded-md transition flex items-center justify-center text-stone-400 hover:bg-stone-100";
                 colorContainer.classList.add('opacity-50', 'pointer-events-none');
-                sizeIndicator.classList.replace('bg-stone-800', 'bg-stone-400');
-                brushSizeInput.max = "20"; // Eraser can be bigger
+                sizeIndicator.classList.replace('bg-stone-800', 'bg-stone-400'); brushSizeInput.max = "20";
                 canvasContainer.classList.replace('cursor-crosshair', 'cursor-cell');
             } else {
                 penToolBtn.className = "p-1.5 rounded-md transition flex items-center justify-center bg-rose-100 text-rose-600 shadow-sm";
                 eraserToolBtn.className = "p-1.5 rounded-md transition flex items-center justify-center text-stone-400 hover:bg-stone-100";
                 colorContainer.classList.remove('opacity-50', 'pointer-events-none');
-                sizeIndicator.classList.replace('bg-stone-400', 'bg-stone-800');
-                brushSizeInput.max = "10";
+                sizeIndicator.classList.replace('bg-stone-400', 'bg-stone-800'); brushSizeInput.max = "10";
                 canvasContainer.classList.replace('cursor-cell', 'cursor-crosshair');
             }
         }
@@ -419,20 +428,9 @@
         eraserToolBtn.addEventListener('click', () => { isEraser = true; updateToolUI(); });
         clearCanvasBtn.addEventListener('click', clearCanvas);
 
-        window.addEventListener('resize', () => {
-            if (viewMode === 'write') {
-                const imgData = hasSignature ? canvas.toDataURL() : null;
-                initCanvas();
-                if (imgData) {
-                    const img = new Image();
-                    img.onload = () => { ctx.drawImage(img, 0, 0); hasSignature = true; canvasHint.style.display = 'none';};
-                    img.src = imgData;
-                }
-            }
-        });
-
-        // 7. SUBMIT FORM
         submitBtn.addEventListener('click', () => {
+            if (!isConfigured) { showNotif('Lỗi kết nối CSDL, xem lại file code!', 'error'); return; }
+
             const msgVal = messageInput.value.trim();
             const nameVal = senderNameInput.value.trim();
             const isAnon = isAnonymousCheck.checked;
@@ -441,70 +439,62 @@
             if (!isAnon && !nameVal) return showNotif('Vui lòng nhập tên hoặc chọn ẩn danh nhé!', 'error');
 
             const newEntry = {
-                id: Date.now().toString(),
                 name: isAnon ? 'Người bạn ẩn danh' : nameVal,
                 message: msgVal,
-                photo: currentPhotoData,
-                signature: hasSignature ? canvas.toDataURL('image/png') : null,
+                photo: currentPhotoData || "", // Chuỗi rỗng nếu không có ảnh
+                signature: hasSignature ? canvas.toDataURL('image/png') : "",
                 mood: currentMood,
-                date: new Date().toLocaleString('vi-VN')
+                date: new Date().toLocaleString('vi-VN'),
+                timestamp: firebase.database.ServerValue.TIMESTAMP
             };
 
-            entries.unshift(newEntry); // Add to beginning
-            localStorage.setItem('luubut_entries', JSON.stringify(entries));
+            // Gửi dữ liệu lên Firebase
+            submitBtn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Đang gửi...';
+            submitBtn.disabled = true;
+            lucide.createIcons();
 
-            // Reset Form
-            senderNameInput.value = '';
-            messageInput.value = '';
-            isAnonymousCheck.checked = false;
-            senderNameInput.disabled = false;
-            senderNameInput.placeholder = "Tên hoặc biệt danh của bạn...";
-            selectMood('❤️', moodContainer.children[0]);
-            removePhotoBtn.click(); // resets photo
-            clearCanvas();
-            isEraser = false; updateToolUI();
-
-            showNotif('Đã gửi lời chúc thành công! Cảm ơn bạn rất nhiều 🎉');
+            database.ref('luubut_entries').push(newEntry)
+                .then(() => {
+                    // Thành công: Reset form
+                    senderNameInput.value = ''; messageInput.value = '';
+                    isAnonymousCheck.checked = false; senderNameInput.disabled = false;
+                    senderNameInput.placeholder = "Tên hoặc biệt danh của bạn...";
+                    selectMood('❤️', moodContainer.children[0]);
+                    removePhotoBtn.click(); clearCanvas(); isEraser = false; updateToolUI();
+                    showNotif('Đã lưu lên Đám mây thành công! 🎉');
+                })
+                .catch((error) => {
+                    showNotif('Lỗi: ' + error.message, 'error');
+                })
+                .finally(() => {
+                    submitBtn.innerHTML = '<i data-lucide="send" class="w-5 h-5"></i> Gửi Lên Đám Mây';
+                    submitBtn.disabled = false;
+                    lucide.createIcons();
+                });
         });
 
-        // 8. ADMIN / VIEW MANAGEMENT
         function toggleView() {
             if (viewMode === 'write') {
                 if (!isAuthenticated) {
-                    pinModal.classList.remove('hidden');
-                    document.getElementById('pinInput').focus();
-                } else {
-                    switchToAdmin();
-                }
-            } else {
-                switchToWrite();
-            }
+                    pinModal.classList.remove('hidden'); document.getElementById('pinInput').focus();
+                } else { switchToAdmin(); }
+            } else { switchToWrite(); }
         }
 
         function switchToAdmin() {
             viewMode = 'admin';
-            writeView.classList.add('hidden');
-            adminView.classList.remove('hidden');
-            
-            // Cập nhật Header
+            writeView.classList.add('hidden'); adminView.classList.remove('hidden');
             headerText.textContent = 'Quay lại trang Ghi';
-            // Cập nhật icon bằng cách thay đổi innerHTML để Lucide render lại
             headerIcon.outerHTML = '<i id="headerIcon" data-lucide="pen-tool" class="w-5 h-5"></i>';
-            lucide.createIcons();
-
-            renderAdminList();
+            lucide.createIcons(); renderAdminList();
         }
 
         function switchToWrite() {
             viewMode = 'write';
-            writeView.classList.remove('hidden');
-            adminView.classList.add('hidden');
-            
+            writeView.classList.remove('hidden'); adminView.classList.add('hidden');
             headerText.textContent = 'Hộp Lưu Bút';
             headerIcon.outerHTML = '<i id="headerIcon" data-lucide="lock" class="w-5 h-5"></i>';
-            lucide.createIcons();
-
-            initCanvas(); // Đảm bảo canvas render đúng kích thước
+            lucide.createIcons(); initCanvas();
         }
 
         function renderAdminList() {
@@ -514,14 +504,14 @@
             if (entries.length === 0) {
                 listContainer.innerHTML = `
                     <div class="text-center py-20 bg-white rounded-2xl border border-stone-200 border-dashed">
-                        <i data-lucide="coffee" class="w-12 h-12 mx-auto text-stone-300 mb-4"></i>
-                        <p class="text-stone-500 font-medium">Chưa có ai gửi lưu bút cả.<br/>Hãy gửi link này cho bạn bè nhé!</p>
+                        <i data-lucide="cloud" class="w-12 h-12 mx-auto text-stone-300 mb-4"></i>
+                        <p class="text-stone-500 font-medium">Hộp thư trống.<br/>Gửi link web này cho bạn bè để nhận lời chúc nhé!</p>
                     </div>
                 `;
             } else {
                 listContainer.innerHTML = entries.map(entry => `
                     <div class="bg-white p-6 rounded-2xl shadow-md border border-stone-100 relative group">
-                        <button onclick="deleteEntry('${entry.id}')" class="absolute top-4 right-4 text-stone-300 hover:text-red-500 transition p-2 rounded-full hover:bg-red-50" title="Xóa lời chúc">
+                        <button onclick="deleteEntry('${entry.firebaseKey}')" class="absolute top-4 right-4 text-stone-300 hover:text-red-500 transition p-2 rounded-full hover:bg-red-50" title="Xóa lời chúc">
                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                         </button>
                         
@@ -549,47 +539,39 @@
                     </div>
                 `).join('');
             }
-            lucide.createIcons(); // Render icons in dynamic content
+            lucide.createIcons();
         }
 
-        // Expose global function cho nút Delete được render từ chuỗi HTML
-        window.deleteEntry = function(id) {
-            if (confirm('Bạn có chắc muốn xóa lời chúc này?')) {
-                entries = entries.filter(e => e.id !== id);
-                localStorage.setItem('luubut_entries', JSON.stringify(entries));
-                renderAdminList();
-                showNotif('Đã xóa lời chúc.');
+        // Xóa khỏi Firebase
+        window.deleteEntry = function(firebaseKey) {
+            if (confirm('Bạn có chắc muốn xóa lời chúc này khỏi đám mây?')) {
+                database.ref('luubut_entries/' + firebaseKey).remove()
+                    .then(() => showNotif('Đã xóa thành công.'))
+                    .catch(err => showNotif('Lỗi: ' + err.message, 'error'));
             }
         }
 
         toggleViewBtn.addEventListener('click', toggleView);
 
-        // 9. PIN MODAL LOGIC
         const pinInput = document.getElementById('pinInput');
         const loginBtn = document.getElementById('loginBtn');
         const closePinModal = document.getElementById('closePinModal');
 
         function handleLogin() {
             if (pinInput.value === PIN_CODE) {
-                isAuthenticated = true;
-                pinModal.classList.add('hidden');
-                pinInput.value = '';
-                switchToAdmin();
-            } else {
-                showNotif('Mã PIN không chính xác!', 'error');
-            }
+                isAuthenticated = true; pinModal.classList.add('hidden');
+                pinInput.value = ''; switchToAdmin();
+            } else { showNotif('Mã PIN không chính xác!', 'error'); }
         }
 
         loginBtn.addEventListener('click', handleLogin);
-        pinInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') handleLogin();
-        });
-        closePinModal.addEventListener('click', () => {
-            pinModal.classList.add('hidden');
-            pinInput.value = '';
+        pinInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+        closePinModal.addEventListener('click', () => { pinModal.classList.add('hidden'); pinInput.value = ''; });
+
+        window.addEventListener('resize', () => {
+            if (viewMode === 'write' && !hasSignature) initCanvas();
         });
 
-        // Chạy app
         init();
 
     </script>
