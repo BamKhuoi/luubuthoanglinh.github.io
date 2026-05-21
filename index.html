@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lưu Bút Kỷ Niệm</title>
+    <!-- Thư viện Tailwind CSS để styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Thư viện Icon Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .lined-paper {
+            background-image: linear-gradient(transparent, transparent 27px, #e5e5e5 28px);
+            background-size: 100% 28px;
+            line-height: 28px;
+            padding-top: 32px;
+        }
+        /* Ngăn cuộn trang khi đang vẽ trên điện thoại */
+        canvas { touch-action: none; }
+    </style>
+</head>
+<body class="bg-stone-100 font-sans text-stone-800 selection:bg-rose-200">
+
+    <!-- HEADER -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2 text-rose-600">
+                <i data-lucide="heart" class="fill-current"></i>
+                <h1 class="text-xl font-bold tracking-tight">Lưu Bút          hoanglinh</h1>
+            </div>
+            <button id="toggleViewBtn" class="p-2 rounded-full hover:bg-stone-100 transition flex items-center gap-2 text-stone-500" title="Khu vực của chủ nhân">
+                <i id="headerIcon" data-lucide="lock" class="w-5 h-5"></i>
+                <span id="headerText" class="hidden sm:inline text-sm font-medium">Hộp Lưu Bút</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- NOTIFICATION -->
+    <div id="notification" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full shadow-lg text-white font-medium transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-4">
+        <span id="notifMsg"></span>
+    </div>
+
+    <main class="max-w-3xl mx-auto px-4 py-8">
+        
+        <!-- ================= VIEW: GHI LƯU BÚT ================= -->
+        <div id="writeView" class="block bg-white rounded-2xl shadow-xl overflow-hidden border border-stone-200">
+            <div class="p-6 sm:p-8 space-y-6">
+                <div class="text-center space-y-2 mb-8">
+                    <h2 class="text-2xl font-bold text-stone-800">Để lại lời chúc cho mình nhé!</h2>
+                    <p class="text-stone-500">Những dòng chữ này sẽ được lưu giữ cẩn thận và chỉ mình mới có thể đọc được.</p>
+                </div>
+
+                <!-- Tên & Ẩn danh -->
+                <div class="space-y-3">
+                    <label class="block text-sm font-semibold text-stone-700">Người gửi là ai vậy?</label>
+                    <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                        <div class="relative flex-1 w-full">
+                            <i data-lucide="user-circle" class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-5 h-5"></i>
+                            <input type="text" id="senderName" placeholder="Tên hoặc biệt danh của bạn..." class="w-full pl-10 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-rose-400 focus:border-rose-400 outline-none transition disabled:opacity-60 disabled:bg-stone-100">
+                        </div>
+                        <label class="flex items-center gap-2 cursor-pointer bg-stone-100 px-4 py-3 rounded-xl border border-stone-200 hover:bg-stone-200 transition">
+                            <input type="checkbox" id="isAnonymous" class="w-5 h-5 text-rose-500 rounded accent-rose-500">
+                            <span class="font-medium text-stone-700 whitespace-nowrap">Giấu tên 🕵️‍♂️</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Lời chúc & Cảm xúc -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <label class="block text-sm font-semibold text-stone-700">Lời muốn nói...</label>
+                        <div class="flex gap-1 bg-stone-50 p-1 rounded-lg border border-stone-200" id="moodContainer">
+                            <!-- Các nút cảm xúc sẽ được render bằng JS -->
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <textarea id="message" placeholder="Viết gì đó thật tâm huyết nhé..." class="w-full min-h-[200px] p-4 bg-[#fdfbf7] border border-stone-200 rounded-xl focus:ring-2 focus:ring-rose-400 focus:border-rose-400 outline-none transition resize-y text-stone-800 lined-paper"></textarea>
+                        <div id="moodDisplay" class="absolute top-2 right-4 text-2xl">❤️</div>
+                    </div>
+                </div>
+
+                <!-- Ảnh đính kèm -->
+                <div class="space-y-3">
+                    <label class="block text-sm font-semibold text-stone-700">Gửi kèm một bức ảnh kỷ niệm? (Tùy chọn)</label>
+                    <div class="flex items-center gap-4">
+                        <label class="cursor-pointer bg-stone-100 border border-stone-200 border-dashed hover:bg-stone-200 hover:border-stone-400 transition flex items-center gap-2 px-6 py-4 rounded-xl text-stone-600">
+                            <i data-lucide="camera" class="w-5 h-5"></i>
+                            <span class="font-medium">Chọn ảnh</span>
+                            <input type="file" id="photoUpload" accept="image/*" class="hidden">
+                        </label>
+                        <div id="photoPreviewContainer" class="relative group hidden">
+                            <img id="photoPreview" src="" alt="Preview" class="h-20 w-20 object-cover rounded-xl shadow-sm border border-stone-200">
+                            <button id="removePhotoBtn" class="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition shadow" title="Xóa ảnh">
+                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Canvas: Ký tên / Vẽ tay (Có cục tẩy) -->
+                <div class="space-y-3 pt-4 border-t border-stone-100">
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                        <label class="block text-sm font-semibold text-stone-700 flex items-center gap-2">
+                            <i data-lucide="pen-tool" class="w-4 h-4"></i> Ký tên hoặc vẽ bậy 
+                        </label>
+                        
+                        <div class="flex flex-wrap items-center gap-2 bg-stone-50 p-2 rounded-xl border border-stone-200 w-full sm:w-auto">
+                            <!-- Tool selection (Pen/Eraser) -->
+                            <div class="flex bg-white rounded-lg border border-stone-200 p-0.5 overflow-hidden">
+                                <button id="penToolBtn" class="p-1.5 rounded-md transition flex items-center justify-center bg-rose-100 text-rose-600 shadow-sm" title="Bút vẽ">
+                                    <i data-lucide="pen-tool" class="w-4 h-4"></i>
+                                </button>
+                                <button id="eraserToolBtn" class="p-1.5 rounded-md transition flex items-center justify-center text-stone-400 hover:bg-stone-100" title="Cục tẩy">
+                                    <i data-lucide="eraser" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+
+                            <div class="w-px h-6 bg-stone-300 hidden sm:block"></div>
+
+                            <!-- Color Picker -->
+                            <div id="colorContainer" class="flex items-center gap-1 transition">
+                                <input type="color" id="brushColor" value="#000000" class="w-7 h-7 p-0 border-0 rounded cursor-pointer bg-transparent" title="Đổi màu bút">
+                            </div>
+
+                            <div class="w-px h-6 bg-stone-300 hidden sm:block"></div>
+
+                            <!-- Size Slider -->
+                            <div class="flex items-center gap-2 px-1 flex-1 sm:flex-none">
+                                <div id="sizeIndicator" class="w-2 h-2 rounded-full bg-stone-800"></div>
+                                <input type="range" id="brushSize" min="1" max="10" value="3" class="w-16 sm:w-20 accent-stone-600" title="Chỉnh cỡ ngòi/tẩy">
+                            </div>
+
+                            <div class="w-px h-6 bg-stone-300 hidden sm:block"></div>
+
+                            <!-- Clear Canvas -->
+                            <button id="clearCanvasBtn" class="text-stone-500 hover:text-red-500 p-1.5 rounded hover:bg-red-50 transition ml-auto sm:ml-0" title="Xóa toàn bộ">
+                                <i data-lucide="undo" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="canvasContainer" class="border-2 border-stone-200 border-dashed rounded-xl overflow-hidden bg-white cursor-crosshair">
+                        <canvas id="signatureCanvas" class="w-full"></canvas>
+                    </div>
+                    <p id="canvasHint" class="text-xs text-stone-400 text-center">Dùng chuột hoặc ngón tay để ký lên khung trên nhé.</p>
+                </div>
+
+                <!-- Gửi -->
+                <button id="submitBtn" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold text-lg py-4 rounded-xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 mt-6">
+                    <i data-lucide="send" class="w-5 h-5"></i> Gửi Lưu Bút
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= VIEW: QUẢN LÝ (ADMIN) ================= -->
+        <div id="adminView" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-rose-100 flex justify-between items-center">
+                <div>
+                    <h2 class="text-2xl font-bold text-rose-700">Hòm Thư Của Bạn</h2>
+                    <p id="adminEntryCount" class="text-stone-500">Bạn đang có 0 lời chúc.</p>
+                </div>
+            </div>
+
+            <div id="adminList" class="grid gap-6">
+                <!-- Danh sách lời chúc sẽ được render vào đây -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ================= MODAL: NHẬP MÃ PIN ================= -->
+    <div id="pinModal" class="fixed inset-0 bg-stone-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm relative transform scale-100 transition-all">
+            <button id="closePinModal" class="absolute top-4 right-4 text-stone-400 hover:text-stone-700">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="lock" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-xl font-bold text-stone-800">Khu vực riêng tư</h3>
+                <p class="text-sm text-stone-500 mt-1">Nhập mã PIN để xem lưu bút</p>
+            </div>
+            <!-- Thay đổi type="password" thành type="text" nếu muốn nhìn thấy mật khẩu khi nhập, hiện tại đang ẩn -->
+            <input type="password" id="pinInput" placeholder="Nhập mã PIN..." class="w-full text-center tracking-widest text-lg font-bold py-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-2 focus:ring-rose-400 outline-none mb-4">
+            <button id="loginBtn" class="w-full bg-stone-800 hover:bg-stone-900 text-white font-semibold py-3 rounded-xl transition">Mở Khóa</button>
+            <p class="text-xs text-center text-stone-400 mt-4">Khu vực chỉ dành cho quản trị viên</p>
+        </div>
+    </div>
+
+    <!-- ================= JAVASCRIPT ================= -->
+    <script>
+        // Khởi tạo Icon Lucide
+        lucide.createIcons();
+
+        // 1. STATE VARIABLES
+        let entries = [];
+        let viewMode = 'write'; // 'write' or 'admin'
+        let isAuthenticated = false;
+        
+        let currentPhotoData = null;
+        let currentMood = '❤️';
+        let isEraser = false;
+        let hasSignature = false;
+        
+        let isDrawing = false;
+        // ĐÃ ĐỔI MẬT KHẨU THEO YÊU CẦU
+        const PIN_CODE = 'linh_2008';
+
+        // 2. DOM ELEMENTS
+        const toggleViewBtn = document.getElementById('toggleViewBtn');
+        const headerIcon = document.getElementById('headerIcon');
+        const headerText = document.getElementById('headerText');
+        
+        const writeView = document.getElementById('writeView');
+        const adminView = document.getElementById('adminView');
+        const pinModal = document.getElementById('pinModal');
+        
+        const senderNameInput = document.getElementById('senderName');
+        const isAnonymousCheck = document.getElementById('isAnonymous');
+        const messageInput = document.getElementById('message');
+        const photoUpload = document.getElementById('photoUpload');
+        const photoPreviewContainer = document.getElementById('photoPreviewContainer');
+        const photoPreview = document.getElementById('photoPreview');
+        const removePhotoBtn = document.getElementById('removePhotoBtn');
+        const moodContainer = document.getElementById('moodContainer');
+        const moodDisplay = document.getElementById('moodDisplay');
+        const submitBtn = document.getElementById('submitBtn');
+
+        const canvas = document.getElementById('signatureCanvas');
+        const ctx = canvas.getContext('2d');
+        const penToolBtn = document.getElementById('penToolBtn');
+        const eraserToolBtn = document.getElementById('eraserToolBtn');
+        const brushColorInput = document.getElementById('brushColor');
+        const brushSizeInput = document.getElementById('brushSize');
+        const colorContainer = document.getElementById('colorContainer');
+        const sizeIndicator = document.getElementById('sizeIndicator');
+        const clearCanvasBtn = document.getElementById('clearCanvasBtn');
+        const canvasContainer = document.getElementById('canvasContainer');
+        const canvasHint = document.getElementById('canvasHint');
+
+        // 3. INITIALIZATION
+        function init() {
+            // Load từ Local Storage
+            const saved = localStorage.getItem('luubut_entries');
+            if (saved) entries = JSON.parse(saved);
+
+            // Khởi tạo Canvas size
+            initCanvas();
+
+            // Khởi tạo Moods
+            const moods = ['❤️', '😊', '😭', '✨', '🔥', '🍀'];
+            moods.forEach(m => {
+                const btn = document.createElement('button');
+                btn.textContent = m;
+                btn.className = `w-8 h-8 rounded text-lg flex items-center justify-center transition ${m === currentMood ? 'bg-white shadow scale-110' : 'hover:bg-stone-200 grayscale opacity-60 hover:grayscale-0 hover:opacity-100'}`;
+                btn.title = "Chọn cảm xúc";
+                btn.onclick = () => selectMood(m, btn);
+                moodContainer.appendChild(btn);
+            });
+        }
+
+        // 4. NOTIFICATION FUNCTION
+        function showNotif(msg, type = 'success') {
+            const notif = document.getElementById('notification');
+            const notifMsg = document.getElementById('notifMsg');
+            notifMsg.textContent = msg;
+            
+            notif.className = `fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full shadow-lg text-white font-medium transition-all duration-300 ${type === 'error' ? 'bg-red-500' : 'bg-green-500'}`;
+            
+            // Show
+            requestAnimationFrame(() => {
+                notif.classList.remove('opacity-0', 'pointer-events-none', '-translate-y-4');
+                notif.classList.add('opacity-100', 'translate-y-0');
+            });
+
+            // Hide
+            setTimeout(() => {
+                notif.classList.remove('opacity-100', 'translate-y-0');
+                notif.classList.add('opacity-0', 'pointer-events-none', '-translate-y-4');
+            }, 3000);
+        }
+
+        // 5. FORM EVENT LISTENERS
+        isAnonymousCheck.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            senderNameInput.disabled = isChecked;
+            if (isChecked) {
+                senderNameInput.value = '';
+                senderNameInput.placeholder = "Sẽ hiển thị là 'Người bạn ẩn danh'";
+            } else {
+                senderNameInput.placeholder = "Tên hoặc biệt danh của bạn...";
+            }
+        });
+
+        function selectMood(m, btnElement) {
+            currentMood = m;
+            moodDisplay.textContent = m;
+            // Update UI
+            Array.from(moodContainer.children).forEach(btn => {
+                btn.className = `w-8 h-8 rounded text-lg flex items-center justify-center transition ${btn.textContent === m ? 'bg-white shadow scale-110' : 'hover:bg-stone-200 grayscale opacity-60 hover:grayscale-0 hover:opacity-100'}`;
+            });
+        }
+
+        photoUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    showNotif('Ảnh quá lớn. Vui lòng chọn ảnh dưới 5MB.', 'error');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    currentPhotoData = reader.result;
+                    photoPreview.src = currentPhotoData;
+                    photoPreviewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        removePhotoBtn.addEventListener('click', () => {
+            currentPhotoData = null;
+            photoUpload.value = '';
+            photoPreviewContainer.classList.add('hidden');
+        });
+
+        // 6. CANVAS (DRAWING & ERASER) LOGIC
+        function initCanvas() {
+            canvas.width = canvas.parentElement.offsetWidth;
+            canvas.height = 200; // Fixed height
+            clearCanvas(); // Fill white
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            hasSignature = false;
+            canvasHint.style.display = 'block';
+        }
+
+        function getCanvasCoordinates(evt) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            let clientX, clientY;
+
+            if (evt.touches && evt.touches.length > 0) {
+                clientX = evt.touches[0].clientX;
+                clientY = evt.touches[0].clientY;
+            } else {
+                clientX = evt.clientX;
+                clientY = evt.clientY;
+            }
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function startDraw(e) {
+            e.preventDefault();
+            isDrawing = true;
+            canvasHint.style.display = 'none';
+            const { x, y } = getCanvasCoordinates(e);
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        function performDraw(e) {
+            e.preventDefault();
+            if (!isDrawing) return;
+            const { x, y } = getCanvasCoordinates(e);
+            ctx.lineTo(x, y);
+            
+            ctx.strokeStyle = isEraser ? '#ffffff' : brushColorInput.value;
+            ctx.lineWidth = isEraser ? brushSizeInput.value * 2 : brushSizeInput.value;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+            hasSignature = true;
+        }
+
+        function stopDraw() {
+            isDrawing = false;
+        }
+
+        // Canvas Events
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', performDraw);
+        canvas.addEventListener('mouseup', stopDraw);
+        canvas.addEventListener('mouseleave', stopDraw);
+        
+        canvas.addEventListener('touchstart', startDraw, { passive: false });
+        canvas.addEventListener('touchmove', performDraw, { passive: false });
+        canvas.addEventListener('touchend', stopDraw);
+
+        // Tool Selection UI
+        function updateToolUI() {
+            if (isEraser) {
+                eraserToolBtn.className = "p-1.5 rounded-md transition flex items-center justify-center bg-rose-100 text-rose-600 shadow-sm";
+                penToolBtn.className = "p-1.5 rounded-md transition flex items-center justify-center text-stone-400 hover:bg-stone-100";
+                colorContainer.classList.add('opacity-50', 'pointer-events-none');
+                sizeIndicator.classList.replace('bg-stone-800', 'bg-stone-400');
+                brushSizeInput.max = "20"; // Eraser can be bigger
+                canvasContainer.classList.replace('cursor-crosshair', 'cursor-cell');
+            } else {
+                penToolBtn.className = "p-1.5 rounded-md transition flex items-center justify-center bg-rose-100 text-rose-600 shadow-sm";
+                eraserToolBtn.className = "p-1.5 rounded-md transition flex items-center justify-center text-stone-400 hover:bg-stone-100";
+                colorContainer.classList.remove('opacity-50', 'pointer-events-none');
+                sizeIndicator.classList.replace('bg-stone-400', 'bg-stone-800');
+                brushSizeInput.max = "10";
+                canvasContainer.classList.replace('cursor-cell', 'cursor-crosshair');
+            }
+        }
+
+        penToolBtn.addEventListener('click', () => { isEraser = false; updateToolUI(); });
+        eraserToolBtn.addEventListener('click', () => { isEraser = true; updateToolUI(); });
+        clearCanvasBtn.addEventListener('click', clearCanvas);
+
+        window.addEventListener('resize', () => {
+            if (viewMode === 'write') {
+                const imgData = hasSignature ? canvas.toDataURL() : null;
+                initCanvas();
+                if (imgData) {
+                    const img = new Image();
+                    img.onload = () => { ctx.drawImage(img, 0, 0); hasSignature = true; canvasHint.style.display = 'none';};
+                    img.src = imgData;
+                }
+            }
+        });
+
+        // 7. SUBMIT FORM
+        submitBtn.addEventListener('click', () => {
+            const msgVal = messageInput.value.trim();
+            const nameVal = senderNameInput.value.trim();
+            const isAnon = isAnonymousCheck.checked;
+
+            if (!msgVal) return showNotif('Bạn chưa viết lời chúc kìa!', 'error');
+            if (!isAnon && !nameVal) return showNotif('Vui lòng nhập tên hoặc chọn ẩn danh nhé!', 'error');
+
+            const newEntry = {
+                id: Date.now().toString(),
+                name: isAnon ? 'Người bạn ẩn danh' : nameVal,
+                message: msgVal,
+                photo: currentPhotoData,
+                signature: hasSignature ? canvas.toDataURL('image/png') : null,
+                mood: currentMood,
+                date: new Date().toLocaleString('vi-VN')
+            };
+
+            entries.unshift(newEntry); // Add to beginning
+            localStorage.setItem('luubut_entries', JSON.stringify(entries));
+
+            // Reset Form
+            senderNameInput.value = '';
+            messageInput.value = '';
+            isAnonymousCheck.checked = false;
+            senderNameInput.disabled = false;
+            senderNameInput.placeholder = "Tên hoặc biệt danh của bạn...";
+            selectMood('❤️', moodContainer.children[0]);
+            removePhotoBtn.click(); // resets photo
+            clearCanvas();
+            isEraser = false; updateToolUI();
+
+            showNotif('Đã gửi lời chúc thành công! Cảm ơn bạn rất nhiều 🎉');
+        });
+
+        // 8. ADMIN / VIEW MANAGEMENT
+        function toggleView() {
+            if (viewMode === 'write') {
+                if (!isAuthenticated) {
+                    pinModal.classList.remove('hidden');
+                    document.getElementById('pinInput').focus();
+                } else {
+                    switchToAdmin();
+                }
+            } else {
+                switchToWrite();
+            }
+        }
+
+        function switchToAdmin() {
+            viewMode = 'admin';
+            writeView.classList.add('hidden');
+            adminView.classList.remove('hidden');
+            
+            // Cập nhật Header
+            headerText.textContent = 'Quay lại trang Ghi';
+            // Cập nhật icon bằng cách thay đổi innerHTML để Lucide render lại
+            headerIcon.outerHTML = '<i id="headerIcon" data-lucide="pen-tool" class="w-5 h-5"></i>';
+            lucide.createIcons();
+
+            renderAdminList();
+        }
+
+        function switchToWrite() {
+            viewMode = 'write';
+            writeView.classList.remove('hidden');
+            adminView.classList.add('hidden');
+            
+            headerText.textContent = 'Hộp Lưu Bút';
+            headerIcon.outerHTML = '<i id="headerIcon" data-lucide="lock" class="w-5 h-5"></i>';
+            lucide.createIcons();
+
+            initCanvas(); // Đảm bảo canvas render đúng kích thước
+        }
+
+        function renderAdminList() {
+            document.getElementById('adminEntryCount').textContent = `Bạn đang có ${entries.length} lời chúc.`;
+            const listContainer = document.getElementById('adminList');
+            
+            if (entries.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-20 bg-white rounded-2xl border border-stone-200 border-dashed">
+                        <i data-lucide="coffee" class="w-12 h-12 mx-auto text-stone-300 mb-4"></i>
+                        <p class="text-stone-500 font-medium">Chưa có ai gửi lưu bút cả.<br/>Hãy gửi link này cho bạn bè nhé!</p>
+                    </div>
+                `;
+            } else {
+                listContainer.innerHTML = entries.map(entry => `
+                    <div class="bg-white p-6 rounded-2xl shadow-md border border-stone-100 relative group">
+                        <button onclick="deleteEntry('${entry.id}')" class="absolute top-4 right-4 text-stone-300 hover:text-red-500 transition p-2 rounded-full hover:bg-red-50" title="Xóa lời chúc">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                        
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-xl shadow-inner">${entry.mood}</div>
+                            <div>
+                                <h3 class="font-bold text-lg text-stone-800">${entry.name}</h3>
+                                <p class="text-xs text-stone-400">${entry.date}</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-stone-50 p-4 rounded-xl text-stone-700 whitespace-pre-wrap leading-relaxed border border-stone-100 mb-4">${entry.message}</div>
+
+                        ${entry.photo ? `
+                        <div class="mb-4">
+                            <p class="text-xs font-semibold text-stone-400 mb-2 uppercase tracking-wider">Ảnh đính kèm:</p>
+                            <img src="${entry.photo}" alt="Đính kèm" class="max-w-full sm:max-w-sm rounded-xl border border-stone-200 shadow-sm" />
+                        </div>` : ''}
+
+                        ${entry.signature ? `
+                        <div class="mt-4 pt-4 border-t border-stone-100">
+                            <p class="text-xs font-semibold text-stone-400 mb-2 uppercase tracking-wider">Chữ ký:</p>
+                            <img src="${entry.signature}" alt="Chữ ký" class="h-24 object-contain" />
+                        </div>` : ''}
+                    </div>
+                `).join('');
+            }
+            lucide.createIcons(); // Render icons in dynamic content
+        }
+
+        // Expose global function cho nút Delete được render từ chuỗi HTML
+        window.deleteEntry = function(id) {
+            if (confirm('Bạn có chắc muốn xóa lời chúc này?')) {
+                entries = entries.filter(e => e.id !== id);
+                localStorage.setItem('luubut_entries', JSON.stringify(entries));
+                renderAdminList();
+                showNotif('Đã xóa lời chúc.');
+            }
+        }
+
+        toggleViewBtn.addEventListener('click', toggleView);
+
+        // 9. PIN MODAL LOGIC
+        const pinInput = document.getElementById('pinInput');
+        const loginBtn = document.getElementById('loginBtn');
+        const closePinModal = document.getElementById('closePinModal');
+
+        function handleLogin() {
+            if (pinInput.value === PIN_CODE) {
+                isAuthenticated = true;
+                pinModal.classList.add('hidden');
+                pinInput.value = '';
+                switchToAdmin();
+            } else {
+                showNotif('Mã PIN không chính xác!', 'error');
+            }
+        }
+
+        loginBtn.addEventListener('click', handleLogin);
+        pinInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+        closePinModal.addEventListener('click', () => {
+            pinModal.classList.add('hidden');
+            pinInput.value = '';
+        });
+
+        // Chạy app
+        init();
+
+    </script>
+</body>
+</html>
